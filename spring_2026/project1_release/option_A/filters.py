@@ -29,7 +29,17 @@ def conv_nested(image, kernel):
     out = np.zeros((Hi, Wi))
 
     ### YOUR CODE HERE
-    pass
+    padded = np.pad(image, ((Hk // 2, Hk // 2), (Wk // 2, Wk // 2)))
+    
+    kernel_flipped = np.flip(kernel)
+
+    for i in range(Hi):
+        for j in range(Wi):
+            for m in range(Hk):
+                for n in range(Wk):
+                    out[i, j] += (
+                        padded[i + m, j + n] * kernel_flipped[m, n]
+                    )
     ### END YOUR CODE
 
     return out
@@ -56,7 +66,10 @@ def zero_pad(image, pad_height, pad_width):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    out = np.zeros((H + 2 * pad_height, W + 2 * pad_width))
+
+    # Place the original image in the center
+    out[pad_height:pad_height + H, pad_width:pad_width + W] = image
     ### END YOUR CODE
     return out
 
@@ -85,7 +98,13 @@ def conv_fast(image, kernel):
     out = np.zeros((Hi, Wi))
 
     ### YOUR CODE HERE
-    pass
+    padded = zero_pad(image, Hk // 2, Wk // 2)
+    kernel = np.flip(kernel)
+
+    for i in range(Hi):
+        for j in range(Wi):
+            window = padded[i:i + Hk, j:j + Wk]
+            out[i, j] = np.sum(window * kernel)
     ### END YOUR CODE
 
     return out
@@ -105,7 +124,7 @@ def cross_correlation(f, g):
 
     out = None
     ### YOUR CODE HERE
-    pass
+    out = conv_fast(f, np.flip(g))
     ### END YOUR CODE
 
     return out
@@ -127,7 +146,8 @@ def zero_mean_cross_correlation(f, g):
 
     out = None
     ### YOUR CODE HERE
-    pass
+    zero_mean = g - np.mean(g)
+    out = cross_correlation(f, zero_mean)
     ### END YOUR CODE
 
     return out
@@ -151,7 +171,27 @@ def normalized_cross_correlation(f, g):
 
     out = None
     ### YOUR CODE HERE
-    pass
+    Hf, Wf = f.shape
+    Hg, Wg = g.shape
+
+    out = np.zeros((Hf, Wf))
+
+    padded = zero_pad(f, Hg // 2, Wg // 2)
+
+    g_mean = np.mean(g)
+    g_std = np.std(g)
+    g_norm = (g - g_mean) / g_std
+
+    for i in range(Hf):
+        for j in range(Wf):
+            window = padded[i:i + Hg, j:j + Wg]
+
+            w_mean = np.mean(window)
+            w_std = np.std(window)
+
+            window_norm = (window - w_mean) / w_std
+
+            out[i, j] = np.sum(window_norm * g_norm)
     ### END YOUR CODE
 
     return out
